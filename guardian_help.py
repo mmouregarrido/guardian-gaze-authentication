@@ -6,6 +6,8 @@
 import os
 import re
 import warnings
+import math
+import ast
 
 # Third-party
 import matplotlib.pyplot as plt
@@ -17,7 +19,6 @@ from scipy.io import loadmat
 # ------------------------------------------------------------------------------
 # Global flags
 # ------------------------------------------------------------------------------
-DEBUG = False
 
 # Ignore warnings globally (use with care in production)
 warnings.filterwarnings("ignore")
@@ -58,7 +59,7 @@ PASTEL_COLORS = [
 
 # Load segment metadata once and reuse it in helper functions
 segment_description_csv_path = os.path.join(PATH_DATA, "30s_segment_description.csv")
-segment_description_df = pd.read_csv(segment_description_csv_path, sep=";")
+segment_description_df = pd.read_csv(segment_description_csv_path, sep=",", encoding="latin-1")
 segment_description_df.dropna(subset=["index"], inplace=True)
 segment_description_df["index"] = (
     segment_description_df["index"].astype(float).astype(int).astype(str)
@@ -80,11 +81,8 @@ def get_videos_info(user_folder_path: str) -> pd.DataFrame:
         raise FileNotFoundError(f"No videos .txt file found in: {user_folder_path}")
 
     videos_txt_path = os.path.join(user_folder_path, videos_txt_files[0])
-    with open(videos_txt_path, "r", encoding="utf-8") as file:
+    with open(videos_txt_path, "r", encoding="latin-1") as file:
         video_names = [line.strip() for line in file.readlines() if line.strip()]
-
-    if DEBUG:
-        print(f"Video names: {video_names}")
 
     df_video_numbers = pd.DataFrame({"video_number": video_names})
     df_video_numbers["video_number"] = (
@@ -111,12 +109,7 @@ def load_dataset(folder_path: str, index: int = -1) -> dict[int, pd.DataFrame]:
     dict_files: dict[int, pd.DataFrame] = {}
 
     if not mat_files:
-        if DEBUG:
-            print(f"No .mat files found in: {folder_path}")
         return dict_files
-
-    if DEBUG:
-        print(f"Found {len(mat_files)} .mat files in {folder_path}")
 
     # If index == 0, process only the first file; otherwise process all files
     files_to_process = [mat_files[0]] if index == 0 else mat_files
